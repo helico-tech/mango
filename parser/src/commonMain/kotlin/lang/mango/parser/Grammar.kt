@@ -8,7 +8,7 @@ import com.github.h0tk3y.betterParse.parser.Parser
 
 object Grammar : Grammar<AST>() {
 
-    val int by Tokens.number.use { AST.Constant.Integer(text.toInt()) }
+    val int by Tokens.number.use { AST.Literal.Integer(text.toInt()) }
 
     val constant: Parser<AST.Expression> = int
 
@@ -67,10 +67,10 @@ object Grammar : Grammar<AST>() {
         ).map { (identifier, expression) -> AST.Assignment(identifier, expression)
     }
 
-    val valueDeclaration: Parser<AST.Declaration> = (
+    val variableDeclaration: Parser<AST.Declaration> = (
             Tokens.let and assignment
         )
-        .map { (_, assignment) -> AST.ValueDeclaration(assignment.identifier, assignment.expression)
+        .map { (_, assignment) -> AST.Declaration.Variable(assignment.identifier, assignment.expression)
     }
 
     val parameterList: Parser<List<AST.Identifier>> = (
@@ -79,16 +79,24 @@ object Grammar : Grammar<AST>() {
         .map { (first, rest) -> listOf(first) + rest.map { (_, identifier) -> identifier }
     }
 
-    val whenStatement: Parser<AST.When> = (
+    val whenStatement: Parser<AST.Control.When> = (
         skip(Tokens.whenToken) and
                 skip(Tokens.leftParenthesis) and
                 expression and
                 skip(Tokens.rightParenthesis) and
                 parser { (block or statement) }
-        ).map { (expression, blockOrStatement) -> AST.When(expression, blockOrStatement as? AST.Block ?: AST.Block(listOf(blockOrStatement))) }
+        ).map { (expression, blockOrStatement) -> AST.Control.When(expression, blockOrStatement as? AST.Block ?: AST.Block(listOf(blockOrStatement))) }
+
+    val whileStatement: Parser<AST.Control.While> = (
+        skip(Tokens.whileToken) and
+                skip(Tokens.leftParenthesis) and
+                expression and
+                skip(Tokens.rightParenthesis) and
+                parser { block or statement}
+        ).map { (expression, blockOrStatement) -> AST.Control.While(expression, blockOrStatement as? AST.Block ?: AST.Block(listOf(blockOrStatement))) }
 
     val statement : Parser<AST.Statement> by (
-        valueDeclaration or expression or whenStatement
+        variableDeclaration or expression or whenStatement or whileStatement
     ) and skip(zeroOrMore(Tokens.newline))
 
     val block: Parser<AST.Block> = (
@@ -97,7 +105,7 @@ object Grammar : Grammar<AST>() {
         skip(Tokens.rightBrace)
     ).map { statements -> AST.Block(statements) }
 
-    val functionDeclaration: Parser<AST.FunctionDeclaration> = (
+    val functionDeclaration: Parser<AST.Declaration.Function> = (
         skip(Tokens.fn) and
         identifier and
         skip(Tokens.leftParenthesis) and
@@ -106,7 +114,7 @@ object Grammar : Grammar<AST>() {
         skip(zeroOrMore(Tokens.whitespace)) and
         block
     )
-    .map { (identifier, parameters, block) -> AST.FunctionDeclaration(identifier, parameters ?: emptyList(), block) }
+    .map { (identifier, parameters, block) -> AST.Declaration.Function(identifier, parameters ?: emptyList(), block) }
 
     val program = zeroOrMore(functionDeclaration).map { declarations -> AST.Program(declarations) }
 

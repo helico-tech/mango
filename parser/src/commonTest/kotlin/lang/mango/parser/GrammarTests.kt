@@ -7,7 +7,7 @@ import kotlin.test.assertIs
 
 class GrammarTests {
 
-    private fun createBody(input: String): AST.FunctionDeclaration {
+    private fun createBody(input: String): AST.Declaration.Function {
         val main = """
             fn main() {
                 $input
@@ -15,7 +15,7 @@ class GrammarTests {
         """.trimIndent()
         val program = Grammar.parseToEnd(main) as AST.Program
         assertEquals(1, program.statements.size)
-        return program.statements[0] as AST.FunctionDeclaration
+        return program.statements[0] as AST.Declaration.Function
     }
 
     @Test
@@ -40,7 +40,7 @@ class GrammarTests {
         assertEquals(1, result.statements.size)
         val statement = result.statements[0]
 
-        assertIs<AST.FunctionDeclaration>(statement)
+        assertIs<AST.Declaration.Function>(statement)
         assertEquals("main", statement.identifier.name)
         assertEquals(0, statement.parameters.size)
         assertEquals(0, statement.body.size)
@@ -55,14 +55,14 @@ class GrammarTests {
 
         assertEquals(2, function.body.size)
 
-        val a = function.body[0] as AST.ValueDeclaration
+        val a = function.body[0] as AST.Declaration.Variable
         assertEquals("a", a.identifier.name)
-        assertIs<AST.Constant.Integer>(a.expression)
+        assertIs<AST.Literal.Integer>(a.expression)
         assertEquals(1, a.expression.value)
 
-        val b = function.body[1] as AST.ValueDeclaration
+        val b = function.body[1] as AST.Declaration.Variable
         assertEquals("b", b.identifier.name)
-        assertIs<AST.Constant.Integer>(b.expression)
+        assertIs<AST.Literal.Integer>(b.expression)
         assertEquals(2, b.expression.value)
     }
 
@@ -74,13 +74,13 @@ class GrammarTests {
 
         assertEquals(1, function.body.size)
 
-        val a = function.body[0] as AST.ValueDeclaration
+        val a = function.body[0] as AST.Declaration.Variable
         assertEquals("a", a.identifier.name)
         assertIs<AST.BinaryOperation>(a.expression)
         val binary = a.expression
-        assertIs<AST.Constant.Integer>(binary.left)
+        assertIs<AST.Literal.Integer>(binary.left)
         assertEquals(1, binary.left.value)
-        assertIs<AST.Constant.Integer>(binary.right)
+        assertIs<AST.Literal.Integer>(binary.right)
         assertEquals(2, binary.right.value)
     }
 
@@ -92,17 +92,17 @@ class GrammarTests {
 
         assertEquals(1, main.body.size)
 
-        val a = main.body[0] as AST.ValueDeclaration
+        val a = main.body[0] as AST.Declaration.Variable
         assertEquals("a", a.identifier.name)
         assertIs<AST.FunctionCall>(a.expression)
 
         val call = a.expression
         assertEquals("add", call.identifier.name)
         assertEquals(2, call.arguments.size)
-        assertIs<AST.Constant.Integer>(call.arguments[0])
-        assertEquals(1, (call.arguments[0] as AST.Constant.Integer).value)
-        assertIs<AST.Constant.Integer>(call.arguments[1])
-        assertEquals(2, (call.arguments[1] as AST.Constant.Integer).value)
+        assertIs<AST.Literal.Integer>(call.arguments[0])
+        assertEquals(1, (call.arguments[0] as AST.Literal.Integer).value)
+        assertIs<AST.Literal.Integer>(call.arguments[1])
+        assertEquals(2, (call.arguments[1] as AST.Literal.Integer).value)
     }
 
     @Test
@@ -116,5 +116,26 @@ class GrammarTests {
         """.trimIndent())
 
         assertEquals(3, main.body.size)
+
+        assertIs<AST.Control.When>(main.body[0])
+        assertIs<AST.Control.When>(main.body[1])
+        assertIs<AST.Control.When>(main.body[2])
+    }
+
+    @Test
+    fun whileStatement() {
+        val main = createBody("""
+            while (x > 1) foo()
+            while (x < 1) { bar() }
+            while (x == 1) {
+                baz()
+            }
+        """.trimIndent())
+
+        assertEquals(3, main.body.size)
+
+        assertIs<AST.Control.While>(main.body[0])
+        assertIs<AST.Control.While>(main.body[1])
+        assertIs<AST.Control.While>(main.body[2])
     }
 }

@@ -8,10 +8,18 @@ sealed interface AST {
 
     sealed interface Expression : Statement
 
-    sealed interface Declaration : Statement
+    sealed interface Declaration : Statement {
+        data class Variable(val identifier: Identifier, val expression: Expression): Declaration
+        data class Function(val identifier: Identifier, val parameters: List<Identifier>, val body: Block): Declaration
+    }
 
-    sealed interface Constant : Expression {
-        data class Integer(val value: Int): Constant
+    sealed interface Control : Statement {
+        data class When(val expression: Expression, val body: Block) : Control
+        data class While(val condition: Expression, val body: Block) : Control
+    }
+
+    sealed interface Literal : Expression {
+        data class Integer(val value: Int): Literal
     }
 
     data class Block(val statements: List<Statement>): Expression {
@@ -28,10 +36,4 @@ sealed interface AST {
     data class Identifier(val name: String) : Expression
 
     data class Assignment(val identifier: Identifier, val expression: Expression): Statement
-
-    data class When(val expression: Expression, val body: Block) : Statement
-
-    data class ValueDeclaration(val identifier: Identifier, val expression: Expression): Declaration
-
-    data class FunctionDeclaration(val identifier: Identifier, val parameters: List<Identifier>, val body: Block): Declaration
 }

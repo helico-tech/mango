@@ -11,6 +11,7 @@ object Tokens : TokenSetBuilder() {
 
     val fn by literalToken("fn")
     val whenToken by literalToken("when")
+    val whileToken by literalToken("while")
     val leftParenthesis by literalToken("(")
     val rightParenthesis by literalToken(")")
     val leftBrace by literalToken("{")
