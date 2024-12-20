@@ -79,23 +79,31 @@ object Grammar : Grammar<AST>() {
         .map { (first, rest) -> listOf(first) + rest.map { (_, identifier) -> identifier }
     }
 
-    val block: Parser<List<AST.Statement>> = (
-        skip(Tokens.leftBrace) and
-        zeroOrMore(parser { statement }) and
-        skip(Tokens.rightBrace)
-    )
+    val whenStatement: Parser<AST.When> = (
+        skip(Tokens.whenToken) and
+                skip(Tokens.leftParenthesis) and
+                expression and
+                skip(Tokens.rightParenthesis) and
+                parser { (block or statement) }
+        ).map { (expression, blockOrStatement) -> AST.When(expression, blockOrStatement as? AST.Block ?: AST.Block(listOf(blockOrStatement))) }
 
     val statement : Parser<AST.Statement> by (
-        valueDeclaration or expression
-    )
+        valueDeclaration or expression or whenStatement
+    ) and skip(zeroOrMore(Tokens.newline))
+
+    val block: Parser<AST.Block> = (
+        skip(Tokens.leftBrace) and
+        zeroOrMore(statement) and
+        skip(Tokens.rightBrace)
+    ).map { statements -> AST.Block(statements) }
 
     val functionDeclaration: Parser<AST.FunctionDeclaration> = (
         skip(Tokens.fn) and
         identifier and
-        skip(Tokens.equal) and
         skip(Tokens.leftParenthesis) and
         optional(parameterList) and
         skip(Tokens.rightParenthesis) and
+        skip(zeroOrMore(Tokens.whitespace)) and
         block
     )
     .map { (identifier, parameters, block) -> AST.FunctionDeclaration(identifier, parameters ?: emptyList(), block) }

@@ -8,7 +8,9 @@ import kotlin.reflect.KProperty
 object Tokens : TokenSetBuilder() {
     val whitespace by regexToken("\\s+", ignore = true)
     val newline by regexToken("[\r\n]+", ignore = true)
+
     val fn by literalToken("fn")
+    val whenToken by literalToken("when")
     val leftParenthesis by literalToken("(")
     val rightParenthesis by literalToken(")")
     val leftBrace by literalToken("{")

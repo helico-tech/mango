@@ -11,5 +11,11 @@ kotlin {
                 implementation(libs.betterParse)
             }
         }
+
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }
