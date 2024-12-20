@@ -6,7 +6,7 @@ import com.github.h0tk3y.betterParse.grammar.parser
 import com.github.h0tk3y.betterParse.lexer.Token
 import com.github.h0tk3y.betterParse.parser.Parser
 
-object Grammar : Grammar<AST>() {
+object Grammar : Grammar<AST.Program>() {
 
     val int by Tokens.number.use { AST.Literal.Integer(text.toInt()) }
 
@@ -95,8 +95,13 @@ object Grammar : Grammar<AST>() {
                 parser { block or statement}
         ).map { (expression, blockOrStatement) -> AST.Control.While(expression, blockOrStatement as? AST.Block ?: AST.Block(listOf(blockOrStatement))) }
 
+    val returnStatement: Parser<AST.Control.Return> = (
+        skip(Tokens.returnToken) and
+                parser { expression }
+        ).map { expression -> AST.Control.Return(expression) }
+
     val statement : Parser<AST.Statement> by (
-        variableDeclaration or expression or whenStatement or whileStatement
+        variableDeclaration or expression or whenStatement or whileStatement or returnStatement
     ) and skip(zeroOrMore(Tokens.newline))
 
     val block: Parser<AST.Block> = (
@@ -118,7 +123,7 @@ object Grammar : Grammar<AST>() {
 
     val program = zeroOrMore(functionDeclaration).map { declarations -> AST.Program(declarations) }
 
-    override val rootParser: Parser<AST> = program
+    override val rootParser: Parser<AST.Program> = program
 
     override val tokens: List<Token> = Tokens
 }

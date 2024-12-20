@@ -16,6 +16,7 @@ sealed interface AST {
     sealed interface Control : Statement {
         data class When(val expression: Expression, val body: Block) : Control
         data class While(val condition: Expression, val body: Block) : Control
+        data class Return(val expression: Expression) : Control
     }
 
     sealed interface Literal : Expression {

@@ -13,7 +13,7 @@ class GrammarTests {
                 $input
             }
         """.trimIndent()
-        val program = Grammar.parseToEnd(main) as AST.Program
+        val program = MangoParser.parse(main)
         assertEquals(1, program.statements.size)
         return program.statements[0] as AST.Declaration.Function
     }
@@ -137,5 +137,45 @@ class GrammarTests {
         assertIs<AST.Control.While>(main.body[0])
         assertIs<AST.Control.While>(main.body[1])
         assertIs<AST.Control.While>(main.body[2])
+    }
+
+    @Test
+    fun returnStatement() {
+        val main = createBody("""
+            return 1
+            
+            when (x > 1) return foo()
+            when (x < 1) { return bar() }
+            when (x == 1) {
+                return baz()
+            }
+            
+            when (x > 1) return a
+            when (x < 1) { return b }
+            when (x == 1) {
+                return c
+            }
+        """.trimIndent())
+
+        assertEquals(7, main.body.size)
+    }
+
+    @Test
+    fun fibonacci() {
+        val input = """
+            fn fib(n) {
+                when (n == 0) return 0
+                when (n == 1) return 1
+                
+                return fib(n - 1) + fib(n - 2)
+            }
+            
+            fn main() {
+                let n = input()
+                return fib(n)
+            }
+        """.trimIndent()
+
+        MangoParser.parse(input)
     }
 }
