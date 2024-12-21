@@ -2,11 +2,9 @@ package lang.mango.parser
 
 sealed interface AST {
 
-    data class Program(val statements: List<Statement>): AST
+    data class Program(val statements: List<Declaration.Function>): AST
 
     sealed interface Statement : AST
-
-    sealed interface Expression : Statement
 
     sealed interface Declaration : Statement {
         data class Variable(val identifier: Identifier, val expression: Expression): Declaration
@@ -19,13 +17,15 @@ sealed interface AST {
         data class Return(val expression: Expression) : Control
     }
 
-    sealed interface Literal : Expression {
-        data class Integer(val value: Int): Literal
-    }
-
-    data class Block(val statements: List<Statement>): Expression {
+    data class Block(val statements: List<Statement>): Statement {
         val size = statements.size
         operator fun get(index: Int) = statements[index]
+    }
+
+    sealed interface Expression : Statement
+
+    sealed interface Literal : Expression {
+        data class Integer(val value: Int): Literal
     }
 
     data class UnaryOperation(val operator: String, val expression: Expression): Expression

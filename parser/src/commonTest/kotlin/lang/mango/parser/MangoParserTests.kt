@@ -3,9 +3,10 @@ package lang.mango.parser
 import com.github.h0tk3y.betterParse.grammar.parseToEnd
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertIs
 
-class GrammarTests {
+class MangoParserTests {
 
     private fun createBody(input: String): AST.Declaration.Function {
         val main = """
@@ -15,7 +16,7 @@ class GrammarTests {
         """.trimIndent()
         val program = MangoParser.parse(main)
         assertEquals(1, program.statements.size)
-        return program.statements[0] as AST.Declaration.Function
+        return program.statements[0]
     }
 
     @Test
@@ -177,5 +178,22 @@ class GrammarTests {
         """.trimIndent()
 
         MangoParser.parse(input)
+    }
+
+    @Test
+    fun nestedFunctions() {
+        val input = """
+            fn outer() {
+                fn inner() {
+                    return 1
+                }
+                
+                return inner()
+            }
+        """.trimIndent()
+
+        assertFails("Nested functions are not allowed") {
+            MangoParser.parse(input)
+        }
     }
 }

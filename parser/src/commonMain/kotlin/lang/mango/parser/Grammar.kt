@@ -100,8 +100,19 @@ object Grammar : Grammar<AST.Program>() {
                 parser { expression }
         ).map { expression -> AST.Control.Return(expression) }
 
+    val functionDeclaration: Parser<AST.Declaration.Function> = (
+            skip(Tokens.fn) and
+                    identifier and
+                    skip(Tokens.leftParenthesis) and
+                    optional(parameterList) and
+                    skip(Tokens.rightParenthesis) and
+                    skip(zeroOrMore(Tokens.whitespace)) and
+                    parser { block }
+            )
+        .map { (identifier, parameters, block) -> AST.Declaration.Function(identifier, parameters ?: emptyList(), block) }
+
     val statement : Parser<AST.Statement> by (
-        variableDeclaration or expression or whenStatement or whileStatement or returnStatement
+        variableDeclaration or expression or whenStatement or whileStatement or returnStatement or functionDeclaration
     ) and skip(zeroOrMore(Tokens.newline))
 
     val block: Parser<AST.Block> = (
@@ -109,17 +120,6 @@ object Grammar : Grammar<AST.Program>() {
         zeroOrMore(statement) and
         skip(Tokens.rightBrace)
     ).map { statements -> AST.Block(statements) }
-
-    val functionDeclaration: Parser<AST.Declaration.Function> = (
-        skip(Tokens.fn) and
-        identifier and
-        skip(Tokens.leftParenthesis) and
-        optional(parameterList) and
-        skip(Tokens.rightParenthesis) and
-        skip(zeroOrMore(Tokens.whitespace)) and
-        block
-    )
-    .map { (identifier, parameters, block) -> AST.Declaration.Function(identifier, parameters ?: emptyList(), block) }
 
     val program = zeroOrMore(functionDeclaration).map { declarations -> AST.Program(declarations) }
 
