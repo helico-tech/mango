@@ -2,7 +2,7 @@ package lang.mango.parser
 
 sealed interface AST {
 
-    data class Program(val statements: List<Declaration.Function>): AST
+    data class Program(val functions: List<Declaration.Function>): AST
 
     sealed interface Statement : AST
 

@@ -15,8 +15,8 @@ class MangoParserTests {
             }
         """.trimIndent()
         val program = MangoParser.parse(main)
-        assertEquals(1, program.statements.size)
-        return program.statements[0]
+        assertEquals(1, program.functions.size)
+        return program.functions[0]
     }
 
     @Test
@@ -26,7 +26,7 @@ class MangoParserTests {
         val result = Grammar.parseToEnd(input)
 
         assertIs<AST.Program>(result)
-        assertEquals(0, result.statements.size)
+        assertEquals(0, result.functions.size)
     }
 
     @Test
@@ -38,8 +38,8 @@ class MangoParserTests {
 
         val result = Grammar.parseToEnd(input) as AST.Program
 
-        assertEquals(1, result.statements.size)
-        val statement = result.statements[0]
+        assertEquals(1, result.functions.size)
+        val statement = result.functions[0]
 
         assertIs<AST.Declaration.Function>(statement)
         assertEquals("main", statement.identifier.name)

@@ -41,7 +41,7 @@ interface ASTVisitor {
 
 abstract class BaseVisitor : ASTVisitor {
     override fun program(program: AST.Program) {
-        program.statements.forEach { visit(it) }
+        program.functions.forEach { visit(it) }
     }
 
     override fun variableDeclaration(variableDeclaration: AST.Declaration.Variable) {
