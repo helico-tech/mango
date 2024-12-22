@@ -43,7 +43,7 @@ class MangoParserTests {
 
         assertIs<AST.Declaration.Function>(statement)
         assertEquals("main", statement.identifier.name)
-        assertEquals(0, statement.parameters.size)
+        assertEquals(0, statement.arguments.size)
         assertEquals(0, statement.body.size)
     }
 

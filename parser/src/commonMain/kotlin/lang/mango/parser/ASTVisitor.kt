@@ -51,7 +51,7 @@ abstract class BaseVisitor : ASTVisitor {
 
     override fun functionDeclaration(functionDeclaration: AST.Declaration.Function) {
         visit(functionDeclaration.identifier)
-        functionDeclaration.parameters.forEach { visit(it) }
+        functionDeclaration.arguments.forEach { visit(it) }
         visit(functionDeclaration.body)
     }
 

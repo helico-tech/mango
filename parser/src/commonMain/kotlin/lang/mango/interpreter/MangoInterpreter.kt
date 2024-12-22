@@ -23,7 +23,7 @@ class MangoInterpreter(
     private fun functionCall(functionCall: AST.FunctionCall): Int {
         val function = runtimeEnvironment.getFunction(functionCall.identifier.name)
 
-        val variables = function.parameters.mapIndexed { index, parameter ->
+        val variables = function.arguments.mapIndexed { index, parameter ->
             val value = functionCall.arguments[index]
             parameter.name to expression(value)
         }.toMap()
