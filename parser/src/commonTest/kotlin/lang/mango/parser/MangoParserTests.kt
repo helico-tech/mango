@@ -52,9 +52,10 @@ class MangoParserTests {
         val function = createBody("""
             let a = 1
             let b = 2
+            a = 3
         """.trimIndent())
 
-        assertEquals(2, function.body.size)
+        assertEquals(3, function.body.size)
 
         val a = function.body[0] as AST.Declaration.Variable
         assertEquals("a", a.identifier.name)
@@ -65,6 +66,11 @@ class MangoParserTests {
         assertEquals("b", b.identifier.name)
         assertIs<AST.Literal.Integer>(b.expression)
         assertEquals(2, b.expression.value)
+
+        val assignment = function.body[2] as AST.Assignment
+        assertEquals("a", assignment.identifier.name)
+        assertIs<AST.Literal.Integer>(assignment.expression)
+        assertEquals(3, assignment.expression.value)
     }
 
     @Test
@@ -109,10 +115,10 @@ class MangoParserTests {
     @Test
     fun whenClause() {
         val main = createBody("""
-            when (x > 1) foo()
-            when (x < 1) { bar() }
+            when (x > 1) return foo()
+            when (x < 1) { return bar() }
             when (x == 1) {
-                baz()
+                return baz()
             }
         """.trimIndent())
 
@@ -126,10 +132,10 @@ class MangoParserTests {
     @Test
     fun whileStatement() {
         val main = createBody("""
-            while (x > 1) foo()
-            while (x < 1) { bar() }
+            while (x > 1) { a = a + 1 }
+            while (x < 1) { b = b + 1 }
             while (x == 1) {
-                baz()
+                c = c + 1
             }
         """.trimIndent())
 
@@ -159,6 +165,19 @@ class MangoParserTests {
         """.trimIndent())
 
         assertEquals(7, main.body.size)
+    }
+
+    @Test
+    fun noUnusedExpressions() {
+        val input = """
+            fn main() {
+                foo()
+            }
+        """.trimIndent()
+
+        assertFails {
+            MangoParser.parse(input)
+        }
     }
 
     @Test

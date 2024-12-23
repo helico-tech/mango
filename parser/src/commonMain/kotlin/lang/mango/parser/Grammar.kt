@@ -112,14 +112,17 @@ object Grammar : Grammar<AST.Program>() {
         .map { (identifier, parameters, block) -> AST.Declaration.Function(identifier, parameters ?: emptyList(), block) }
 
     val statement : Parser<AST.Statement> by (
-        variableDeclaration or expression or whenStatement or whileStatement or returnStatement or functionDeclaration
+        assignment or variableDeclaration or expression or whenStatement or whileStatement or returnStatement or functionDeclaration
     ) and skip(zeroOrMore(Tokens.newline))
 
     val block: Parser<AST.Block> = (
         skip(Tokens.leftBrace) and
         zeroOrMore(statement) and
         skip(Tokens.rightBrace)
-    ).map { statements -> AST.Block(statements) }
+    ).map { statements ->
+        require(statements.none { it is AST.Expression  }) { "Only statements are allowed in blocks" }
+        AST.Block(statements)
+    }
 
     val program = zeroOrMore(functionDeclaration).map { declarations -> AST.Program(declarations) }
 
