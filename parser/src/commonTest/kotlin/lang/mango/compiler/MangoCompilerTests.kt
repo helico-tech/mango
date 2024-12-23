@@ -2,7 +2,6 @@ package lang.mango.compiler
 
 import lang.mango.parser.AST
 import lang.mango.parser.MangoParser
-import lang.mango.parser.Tokens
 import kotlin.test.*
 
 class MangoCompilerTests {
@@ -18,11 +17,12 @@ class MangoCompilerTests {
         return program.functions[0]
     }
 
+    val compiler = MangoCompiler()
+
     @Test()
     fun emptyFunction() {
-        val compiler = MangoCompiler()
         val function = AST.Declaration.Function(AST.Identifier("main"), emptyList(), AST.Block(emptyList()))
-        val chunk = compiler.function(function)
+        val chunk = FunctionCompiler(function).compile()
 
         assertEquals("main", chunk.name)
         assertEquals(0, chunk.instructions.size)
@@ -30,14 +30,40 @@ class MangoCompilerTests {
 
     @Test()
     fun saveLocal() {
-        val compiler = MangoCompiler()
-        val function = create("let a = b + 1")
-        val chunk = compiler.function(function)
+        val function = create("""
+            let a = 1
+            let b = a + 2
+        """.trimIndent())
+        val chunk = FunctionCompiler(function).compile()
 
-        assertEquals(4, chunk.instructions.size)
-        assertEquals(Load.Constant(1), chunk.instructions[0])
-        assertEquals(Load.Local("b"), chunk.instructions[1])
-        assertEquals(Arithmetic("plus"), chunk.instructions[2])
-        assertEquals(Store("a"), chunk.instructions[3])
+        assertEquals(6, chunk.instructions.size)
+
+        assertEquals(Push(1), chunk.instructions[0])
+        assertEquals(Store("a", 1), chunk.instructions[1])
+        assertEquals(Push(2), chunk.instructions[2])
+        assertEquals(Load("a", 1), chunk.instructions[3])
+        assertEquals(Arithmetic("plus"), chunk.instructions[4])
+        assertEquals(Store("b", 0), chunk.instructions[5])
+    }
+
+    @Test
+    fun basicMain() {
+        val input = """
+            fn main() {
+                let a = 1
+                let b = 2
+                let c = a + b
+                
+                return c
+            }
+        """.trimIndent()
+
+        val chunks = compiler.compile(MangoParser.parse(input))
+
+        assertEquals(1, chunks.size)
+
+        val chunk = chunks[0]
+        assertEquals("main", chunk.name)
+        assertEquals(10, chunk.instructions.size)
     }
 }

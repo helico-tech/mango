@@ -22,6 +22,9 @@ sealed interface AST {
         operator fun get(index: Int) = statements[index]
     }
 
+    data class Assignment(val identifier: Identifier, val expression: Expression): Statement
+
+    // expressions
     sealed interface Expression : Statement
 
     sealed interface Literal : Expression {
@@ -35,6 +38,4 @@ sealed interface AST {
     data class FunctionCall(val identifier: Identifier, val arguments: List<Expression>): Expression
 
     data class Identifier(val name: String) : Expression
-
-    data class Assignment(val identifier: Identifier, val expression: Expression): Statement
 }

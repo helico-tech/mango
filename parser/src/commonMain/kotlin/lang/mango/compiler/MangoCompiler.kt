@@ -5,13 +5,20 @@ import lang.mango.parser.AST
 class MangoCompiler {
 
     fun compile(program: AST.Program): List<Chunk> {
-        return program.functions.map { function(it) }
+        return program.functions.map {
+            val functionCompiler = FunctionCompiler(it)
+            functionCompiler.compile()
+        }
     }
+}
 
-    fun function(function: AST.Declaration.Function): Chunk {
-        val instructions = function.body.statements.flatMap { statement(it) }
-        val stackFrameDescriptor = StackFrameDescriptor(function)
-        return Chunk(function.identifier.name, stackFrameDescriptor, instructions)
+class FunctionCompiler(val function: AST.Declaration.Function) {
+
+    val stackFrame = StackFrame(function)
+
+    fun compile(): Chunk {
+        val instructions = block(function.body)
+        return Chunk(function.identifier.name, instructions)
     }
 
     fun statement(statement: AST.Statement): List<Instruction> {
@@ -26,8 +33,9 @@ class MangoCompiler {
     fun declaration(declaration: AST.Declaration): List<Instruction> {
         return when (declaration) {
             is AST.Declaration.Variable -> {
-                val statements = statement(declaration.expression)
-                return statements + Store(declaration.identifier.name)
+                val statements = expression(declaration.expression)
+                val store = storeLocal(declaration.identifier.name)
+                return statements + store
             }
             else -> throw UnsupportedOperationException("Unknown declaration: $declaration")
         }
@@ -35,8 +43,8 @@ class MangoCompiler {
 
     fun expression(expression: AST.Expression): List<Instruction> {
         return when (expression) {
-            is AST.Identifier -> listOf(Load.Local(expression.name))
-            is AST.Literal.Integer -> listOf(Load.Constant(expression.value))
+            is AST.Identifier -> listOf(loadLocal(expression.name))
+            is AST.Literal.Integer -> listOf(Push(expression.value))
             is AST.BinaryOperation -> {
                 val left = expression(expression.left)
                 val right = expression(expression.right)
@@ -51,5 +59,19 @@ class MangoCompiler {
             is AST.Control.Return -> expression(control.expression) + Return
             else -> throw UnsupportedOperationException("Unknown control: $control")
         }
+    }
+
+    fun block(block: AST.Block): List<Instruction> {
+        return block.statements.flatMap { statement(it) }
+    }
+
+    private fun storeLocal(name: String): Store {
+        val offset = stackFrame.offset(StackFrame.Data.Local(name))
+        return Store(name, offset)
+    }
+
+    private fun loadLocal(name: String): Load {
+        val offset = stackFrame.offset(StackFrame.Data.Local(name))
+        return Load(name, offset)
     }
 }
