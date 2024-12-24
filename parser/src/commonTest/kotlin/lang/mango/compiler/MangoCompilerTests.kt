@@ -131,4 +131,26 @@ class MangoCompilerTests {
         assertEquals(42, vm.stack.first())
         assertEquals(1, vm.stack.size)
     }
+
+    @Test
+    fun additionTest() {
+        val (result, linked) = create("""
+            fn add(a, b) {
+                return a + b
+            }
+            
+            fn main() { 
+                let a = 4
+                let b = 5
+                return add(a, b)
+            }
+        """.trimIndent())
+
+        val pretty = result.toPrettyString()
+
+        val vm = VirtualMachine(linked)
+        vm.run()
+
+        assertEquals(9, vm.stack.first())
+    }
 }

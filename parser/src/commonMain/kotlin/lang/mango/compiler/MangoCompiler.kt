@@ -97,7 +97,9 @@ abstract class AbstractCompiler(
         emit(ASM = ASM.Load.Label(returnAddressLabel), comment = "Call [${call.identifier.name}] return address")
 
         // locals - arguments first
-        call.arguments.forEach(::expression)
+        call.arguments.forEachIndexed { index, it ->
+            expression(it, offset = 2 + index)
+        }
 
         // locals - block scoped
         repeat(stackFrameDescriptor.localsSize - call.arguments.size) {
@@ -109,7 +111,7 @@ abstract class AbstractCompiler(
         emit(ASM = ASM.Jump, comment = "Call [${call.identifier.name}] jump")
     }
 
-    protected abstract fun expression(expression: AST.Expression)
+    protected abstract fun expression(expression: AST.Expression, offset: Int = 0)
 }
 
 class BootstrapCompiler(
@@ -122,7 +124,7 @@ class BootstrapCompiler(
         return ASM.Chunk.Raw("bootstrap", annotated)
     }
 
-    override fun expression(expression: AST.Expression) {
+    override fun expression(expression: AST.Expression, offset: Int) {
         throw UnsupportedOperationException("Not supported in bootstrap compiler")
     }
 }
@@ -167,10 +169,10 @@ class FunctionCompiler(
         }
     }
 
-    override fun expression(expression: AST.Expression) {
+    override fun expression(expression: AST.Expression, offset: Int) {
         when (expression) {
             is AST.Identifier -> {
-                val offset = stackFrameDescriptor.offset(StackFrameDescriptor.Data.Local(expression.name))
+                val offset = stackFrameDescriptor.offset(StackFrameDescriptor.Data.Local(expression.name)) + offset
                 emit(ASM.Load.Relative(offset), comment = "Variable [${expression.name}]")
             }
             is AST.Literal.Integer -> {
