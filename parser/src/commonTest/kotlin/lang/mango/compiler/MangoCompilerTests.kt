@@ -76,4 +76,59 @@ class MangoCompilerTests {
         assertEquals(42, vm.stack.first())
         assertEquals(1, vm.stack.size)
     }
+
+    @Test
+    fun variables() {
+        val (_, linked) = create("""
+            fn main() {
+                let a = 42
+                return a
+            }
+        """.trimIndent())
+
+        val vm = VirtualMachine(linked)
+        vm.run()
+        assertEquals(42, vm.stack.first())
+        assertEquals(1, vm.stack.size)
+    }
+
+    @Test
+    fun sumVariables() {
+        val (result, linked) = create("""
+            fn main() {
+                let a = 42
+                let b = 8
+                return a + b + 10
+            }
+        """.trimIndent())
+
+        val pretty = result.toPrettyString()
+
+        val vm = VirtualMachine(linked)
+        vm.run()
+
+        assertEquals(60, vm.stack.first())
+        assertEquals(1, vm.stack.size)
+    }
+
+    @Test
+    fun returnFunctionCall() {
+        val (result, linked) = create("""
+            fn foo() {
+                return 42
+            }
+            
+            fn main() {
+                return foo()
+            }
+        """.trimIndent())
+
+        val pretty = result.toPrettyString()
+
+        val vm = VirtualMachine(linked)
+        vm.run()
+
+        assertEquals(42, vm.stack.first())
+        assertEquals(1, vm.stack.size)
+    }
 }

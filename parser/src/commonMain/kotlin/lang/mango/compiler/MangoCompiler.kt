@@ -75,7 +75,7 @@ abstract class AbstractCompiler(
 
     abstract fun compile(): ASM.Chunk
 
-    protected fun emit(ASM: ASM, label: String? = null, comment: String? = null) {
+    protected open fun emit(ASM: ASM, label: String? = null, comment: String? = null) {
         instructions.addLast(ASM)
         if (label != null) label(label)
         if (comment != null) comment(comment)
@@ -109,24 +109,7 @@ abstract class AbstractCompiler(
         emit(ASM = ASM.Jump, comment = "Call [${call.identifier.name}] jump")
     }
 
-    protected fun block(block: AST.Block) {
-        block.statements.forEach(::statement)
-    }
-
-    protected open fun statement(statement: AST.Statement) {
-        when (statement) {
-
-            else -> throw IllegalArgumentException("Unknown statement: $statement")
-        }
-    }
-
-    protected fun expression(expression: AST.Expression) {
-        when (expression) {
-            is AST.Literal.Integer -> emit(ASM.Load.Constant(expression.value))
-            is AST.Identifier -> emit(ASM.Load.Label(expression.name))
-            else -> throw IllegalArgumentException("Unknown expression: $expression")
-        }
-    }
+    protected abstract fun expression(expression: AST.Expression)
 }
 
 class BootstrapCompiler(
@@ -138,6 +121,10 @@ class BootstrapCompiler(
         emit(ASM.Exit, comment = "Exit", label = ".exit")
         return ASM.Chunk.Raw("bootstrap", annotated)
     }
+
+    override fun expression(expression: AST.Expression) {
+        throw UnsupportedOperationException("Not supported in bootstrap compiler")
+    }
 }
 
 class FunctionCompiler(
@@ -145,26 +132,85 @@ class FunctionCompiler(
     functionResolver: FunctionResolver
 ) : AbstractCompiler(functionResolver) {
 
+    private var currentReturnIndex = 0
+    private var requireReturnLabel = false
     private val stackFrameDescriptor = StackFrameDescriptor(function)
 
     override fun compile() : ASM.Chunk.Function {
-        function.body.statements.forEach(::statement)
+        block(function.body)
         return ASM.Chunk.Function(function, annotated)
     }
 
-    override fun statement(statement: AST.Statement) {
-        if (statement is AST.Control.Return) {
-            // push return value on the stack
-            expression(statement.expression)
+    private fun block(block: AST.Block) {
+        block.statements.forEach(::statement)
+    }
 
-            // load return value into the return register
-            val offset = stackFrameDescriptor.offset(StackFrameDescriptor.Data.ReturnValue)
-            emit(ASM.Store(offset), comment = "Return value")
+    private fun statement(statement: AST.Statement) {
+        when (statement) {
+            is AST.Control.Return -> {
+                // push return value on the stack
+                expression(statement.expression)
 
-            returnFromFunction()
-            return
+                // load return value into the return register
+                val offset = stackFrameDescriptor.offset(StackFrameDescriptor.Data.ReturnValue)
+                emit(ASM.Store(offset), comment = "Return value")
+
+                returnFromFunction()
+            }
+
+            is AST.Declaration.Variable -> {
+                expression(statement.expression)
+                val offset = stackFrameDescriptor.offset(StackFrameDescriptor.Data.Local(statement.identifier.name))
+                emit(ASM.Store(offset), comment = "Variable [${statement.identifier.name}]")
+            }
+            else -> throw IllegalArgumentException("Unknown statement: $statement")
+        }
+    }
+
+    override fun expression(expression: AST.Expression) {
+        when (expression) {
+            is AST.Identifier -> {
+                val offset = stackFrameDescriptor.offset(StackFrameDescriptor.Data.Local(expression.name))
+                emit(ASM.Load.Relative(offset), comment = "Variable [${expression.name}]")
+            }
+            is AST.Literal.Integer -> {
+                emit(ASM.Load.Constant(expression.value))
+            }
+            is AST.BinaryOperation -> {
+                expression(expression.right)
+                stackFrameDescriptor.push()
+                expression(expression.left)
+                stackFrameDescriptor.push()
+
+                val op = when (expression.operator) {
+                    "plus" -> ASM.Op.Add
+                    "minus" -> ASM.Op.Sub
+                    "times" -> ASM.Op.Mul
+                    "divide" -> ASM.Op.Div
+                    "modulo" -> ASM.Op.Mod
+                    else -> throw IllegalArgumentException("Unknown operator: ${expression.operator}")
+                }
+                emit(op)
+                stackFrameDescriptor.pop()
+                stackFrameDescriptor.pop()
+            }
+
+            is AST.FunctionCall -> {
+                functionCall(expression, currentReturnLabel())
+                requireReturnLabel = true
+            }
+
+            else -> throw IllegalArgumentException("Unknown expression: $expression")
+        }
+    }
+
+    override fun emit(ASM: ASM, label: String?, comment: String?) {
+        if (requireReturnLabel) {
+            super.emit(ASM, currentReturnLabel(), comment)
+            currentReturnIndex++
+            requireReturnLabel = false
         } else {
-            super.statement(statement)
+            super.emit(ASM, label, comment)
         }
     }
 
@@ -177,4 +223,6 @@ class FunctionCompiler(
         // jump to return address
         emit(ASM.Jump, comment = "Return")
     }
+
+    private fun currentReturnLabel() = ".return.${currentReturnIndex}"
 }

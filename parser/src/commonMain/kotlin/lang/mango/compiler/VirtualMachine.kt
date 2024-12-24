@@ -46,6 +46,20 @@ class VirtualMachine(
             }
 
             is ASM.Exit -> ip = instructions.size
+
+            is ASM.Op -> {
+                val left = pop()
+                val right = pop()
+                val result = when (instruction) {
+                    is ASM.Op.Add -> left + right
+                    is ASM.Op.Sub -> left - right
+                    is ASM.Op.Mul -> left * right
+                    is ASM.Op.Div -> left / right
+                    is ASM.Op.Mod -> left % right
+                }
+
+                stack.addFirst(result)
+            }
             else -> error("Unknown instruction: $instruction")
         }
     }
