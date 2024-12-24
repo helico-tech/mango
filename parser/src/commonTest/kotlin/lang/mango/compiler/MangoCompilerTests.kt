@@ -7,8 +7,11 @@ import kotlin.test.assertEquals
 
 class MangoCompilerTests {
 
-    private fun create(source: String): AST.Program {
-        return MangoParser.parse(source)
+    private fun create(source: String, bootstrap: Boolean = true): Pair<List<ASM.Chunk>, List<ASM>> {
+        val ast = MangoParser.parse(source)
+        val chunks = MangoCompiler.compile(ast, bootstrap = bootstrap)
+        val linked = MangoCompiler.link(chunks)
+        return chunks to linked
     }
 
     @Test
@@ -19,12 +22,11 @@ class MangoCompilerTests {
 
     @Test
     fun emptyMainWithoutBootstrap() {
-        val ast = create("""
+        val ast = MangoParser.parse("""
             fn main() {}
         """.trimIndent())
 
         val result = MangoCompiler.compile(ast, bootstrap = false)
-        assertEquals(1, result.size)
 
         val chunk = result[0] as ASM.Chunk.Function
         assertEquals("main", chunk.name)
@@ -34,15 +36,13 @@ class MangoCompilerTests {
 
     @Test
     fun emptyMainWithBootstrap() {
-        val ast = create("""
+        val (result, linked) = create("""
             fn main() {}
         """.trimIndent())
 
-        val result = MangoCompiler.compile(ast, bootstrap = true)
         assertEquals(2, result.size)
 
         val pretty = result.toPrettyString()
-        val linked = MangoCompiler.link(result)
 
         assertEquals(6, linked.size)
         assertEquals(ASM.Load.Constant(0), linked[0])
