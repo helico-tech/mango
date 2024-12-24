@@ -3,7 +3,7 @@ package lang.mango.compiler
 import lang.mango.parser.AST
 import lang.mango.parser.BaseVisitor
 
-class StackFrame(val function: AST.Declaration.Function) {
+class StackFrameDescriptor(val function: AST.Declaration.Function) {
 
     sealed interface Data {
         data object ReturnAddress : Data
@@ -17,6 +17,8 @@ class StackFrame(val function: AST.Declaration.Function) {
     val totalSize: Int get() = stack.size
 
     val returnSize = 2
+
+    val localsSize get() = stack.count { it is Data.Local }
 
     init {
         stack.addFirst(Data.ReturnValue)
