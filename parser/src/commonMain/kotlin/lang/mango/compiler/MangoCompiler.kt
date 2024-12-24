@@ -36,7 +36,7 @@ object MangoCompiler {
                         if (chunkIndices.contains(instruction.label)) {
                             linked.add(ASM.Load.Constant(chunkIndices[instruction.label]!!))
                         } else {
-                            val localIndex = chunk.instructions.indexOfFirst { annotated -> annotated.label == instruction.label }
+                            val localIndex = chunk.instructions.indexOfFirst { annotated -> annotated.labels.contains(instruction.label) }
                             if (localIndex == -1) {
                                 error("Unknown label: ${instruction.label}")
                             }
@@ -67,22 +67,22 @@ fun interface FunctionResolver {
 abstract class AbstractCompiler(
     protected val functionResolver: FunctionResolver
 ) {
-    protected val labels = mutableMapOf<Int, String>()
+    protected val labels = mutableMapOf<Int, MutableList<String>>()
     protected val comments = mutableMapOf<Int, String>()
     protected val instructions = ArrayDeque<ASM>()
 
-    val annotated get() = instructions.mapIndexed { lineNo, ir -> ASM.Annotated(ir, labels[lineNo], comments[lineNo]) }
+    val annotated get() = instructions.mapIndexed { lineNo, ir -> ASM.Annotated(ir, labels[lineNo] ?: emptyList(), comments[lineNo]) }
 
     abstract fun compile(): ASM.Chunk
 
-    protected open fun emit(ASM: ASM, label: String? = null, comment: String? = null) {
+    protected open fun emit(ASM: ASM, labels: List<String> = emptyList(), comment: String? = null) {
         instructions.addLast(ASM)
-        if (label != null) label(label)
+        if (labels.isNotEmpty()) label(labels)
         if (comment != null) comment(comment)
     }
 
-    protected fun label(label: String, offset: Int? = null) {
-        labels[instructions.size - 1 + (offset ?: 0)] = label
+    protected fun label(_labels: List<String>, offset: Int? = null) {
+        labels[instructions.size - 1 + (offset ?: 0)] = _labels.toMutableList()
     }
 
     protected fun comment(comment: String, offset: Int? = null) {
@@ -120,7 +120,7 @@ class BootstrapCompiler(
     override fun compile(): ASM.Chunk {
         val call = AST.FunctionCall(AST.Identifier("main"), emptyList())
         functionCall(call, ".exit")
-        emit(ASM.Exit, comment = "Exit", label = ".exit")
+        emit(ASM.Exit, comment = "Exit", labels = listOf(".exit"))
         return ASM.Chunk.Raw("bootstrap", annotated)
     }
 
@@ -134,8 +134,9 @@ class FunctionCompiler(
     functionResolver: FunctionResolver
 ) : AbstractCompiler(functionResolver) {
 
-    private var currentReturnIndex = 0
-    private var requireReturnLabel = false
+    private var returnLabelCounter = 0
+    private val returnLabelStack = ArrayDeque<String>()
+    private var labelsToAdd = ArrayDeque<String>()
     private val stackFrameDescriptor = StackFrameDescriptor(function)
 
     override fun compile() : ASM.Chunk.Function {
@@ -165,6 +166,15 @@ class FunctionCompiler(
                 val offset = stackFrameDescriptor.offset(StackFrameDescriptor.Data.Local(statement.identifier.name))
                 emit(ASM.Store(offset), comment = "Variable [${statement.identifier.name}]")
             }
+
+            is AST.Control.When -> {
+                expression(statement.expression)
+                emit(ASM.Load.Label(pushReturnLabel()))
+                emit(ASM.JumpWhenZero)
+                block(statement.body)
+                requireReturnLabel()
+            }
+
             else -> throw IllegalArgumentException("Unknown statement: $statement")
         }
     }
@@ -179,9 +189,9 @@ class FunctionCompiler(
                 emit(ASM.Load.Constant(expression.value))
             }
             is AST.BinaryOperation -> {
-                expression(expression.right)
+                expression(expression.right, offset)
                 stackFrameDescriptor.push()
-                expression(expression.left)
+                expression(expression.left, offset)
                 stackFrameDescriptor.push()
 
                 val op = when (expression.operator) {
@@ -190,6 +200,11 @@ class FunctionCompiler(
                     "times" -> ASM.Op.Mul
                     "divide" -> ASM.Op.Div
                     "modulo" -> ASM.Op.Mod
+                    "greaterThan" -> ASM.Op.GreaterThan
+                    "lessThan" -> ASM.Op.LessThan
+                    "greaterThanOrEqual" -> ASM.Op.GreaterThanOrEqual
+                    "lessThanOrEqual" -> ASM.Op.LessThanOrEqual
+                    "doubleEqual" -> ASM.Op.Equal
                     else -> throw IllegalArgumentException("Unknown operator: ${expression.operator}")
                 }
                 emit(op)
@@ -198,21 +213,21 @@ class FunctionCompiler(
             }
 
             is AST.FunctionCall -> {
-                functionCall(expression, currentReturnLabel())
-                requireReturnLabel = true
+                functionCall(expression, pushReturnLabel())
+                requireReturnLabel()
             }
 
             else -> throw IllegalArgumentException("Unknown expression: $expression")
         }
     }
 
-    override fun emit(ASM: ASM, label: String?, comment: String?) {
-        if (requireReturnLabel) {
-            super.emit(ASM, currentReturnLabel(), comment)
-            currentReturnIndex++
-            requireReturnLabel = false
+    override fun emit(ASM: ASM, labels: List<String>, comment: String?) {
+        if (labelsToAdd.isNotEmpty()) {
+            val labels = mutableListOf<String>().also { it.addAll(labelsToAdd)  }
+            labelsToAdd.clear()
+            super.emit(ASM, labels, comment)
         } else {
-            super.emit(ASM, label, comment)
+            super.emit(ASM, labels, comment)
         }
     }
 
@@ -226,5 +241,17 @@ class FunctionCompiler(
         emit(ASM.Jump, comment = "Return")
     }
 
-    private fun currentReturnLabel() = ".return.${currentReturnIndex}"
+    private fun pushReturnLabel(): String {
+        val label = ".return.${returnLabelCounter++}"
+        returnLabelStack.addFirst(label)
+        return label
+    }
+
+    private fun popReturnLabel(): String {
+        return returnLabelStack.removeFirst()
+    }
+
+    private fun requireReturnLabel() {
+        labelsToAdd.addFirst(popReturnLabel())
+    }
 }

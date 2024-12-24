@@ -153,4 +153,106 @@ class MangoCompilerTests {
 
         assertEquals(9, vm.stack.first())
     }
+
+    @Test
+    fun conditional() {
+        val (result, linked) = create("""
+            fn main() {               
+                when (5 > 4) {
+                    return 3
+                }
+                return 2
+            }
+        """.trimIndent())
+
+        val pretty = result.toPrettyString()
+
+        val vm = VirtualMachine(linked)
+        vm.run()
+
+        assertEquals(3, vm.stack.first())
+    }
+
+    @Test
+    fun conditional2() {
+        val (result, linked) = create("""
+            fn main() {               
+                when (5 < 4) {
+                    return 3
+                }
+                return 2
+            }
+        """.trimIndent())
+
+        val pretty = result.toPrettyString()
+
+        val vm = VirtualMachine(linked)
+        vm.run()
+
+        assertEquals(2, vm.stack.first())
+    }
+
+    @Test
+    fun conditionals() {
+        val (result, linked) = create("""
+            fn main() {
+                when (5 > 4) {
+                    when (3 == 3) return 3
+                }
+                return 2
+            }
+        """.trimIndent())
+
+        val pretty = result.toPrettyString()
+
+        val vm = VirtualMachine(linked)
+        vm.run()
+
+        assertEquals(3, vm.stack.first())
+    }
+
+    @Test
+    fun recursion() {
+        val (result, linked) = create("""
+            fn foo(n) {
+                when (n == 0) return 0
+                return foo(n - 1)
+            }
+            
+            fn main() {
+                return foo(2)
+            }
+        """.trimIndent())
+
+        val pretty = result.toPrettyString()
+
+        val vm = VirtualMachine(linked)
+        vm.run()
+
+        assertEquals(0, vm.stack.first())
+    }
+
+    @Test
+    fun fibonacci() {
+        val (result, linked) = create("""
+            fn fib(n) {
+                when (n == 0) return 0
+                when (n == 1) return 1
+
+                return fib(n - 1) + fib(n - 2)
+            }
+
+            fn main() {
+                return fib(30)
+            }
+        """.trimIndent())
+
+        val pretty = result.toPrettyString()
+
+        val vm = VirtualMachine(linked)
+        vm.run()
+
+        assertEquals(832040, vm.stack.first())
+        assertEquals(1, vm.stack.size)
+    }
 }

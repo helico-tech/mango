@@ -39,6 +39,13 @@ class VirtualMachine(
                 ip = pop()
             }
 
+            is ASM.JumpWhenZero -> {
+                val address = pop()
+                if (pop() == 0) {
+                    ip = address
+                }
+            }
+
             is ASM.Pop -> {
                 repeat(instruction.count) {
                     pop()
@@ -56,10 +63,17 @@ class VirtualMachine(
                     is ASM.Op.Mul -> left * right
                     is ASM.Op.Div -> left / right
                     is ASM.Op.Mod -> left % right
+                    is ASM.Op.GreaterThan -> if (left > right) 1 else 0
+                    is ASM.Op.LessThan -> if (left < right) 1 else 0
+                    is ASM.Op.GreaterThanOrEqual -> if (left >= right) 1 else 0
+                    is ASM.Op.LessThanOrEqual -> if (left <= right) 1 else 0
+                    is ASM.Op.Equal -> if (left == right) 1 else 0
+                    else -> error("Unknown operator: $instruction")
                 }
 
                 stack.addFirst(result)
             }
+
             else -> error("Unknown instruction: $instruction")
         }
     }
