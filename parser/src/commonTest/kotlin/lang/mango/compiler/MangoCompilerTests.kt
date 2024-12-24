@@ -30,8 +30,10 @@ class MangoCompilerTests {
 
         val chunk = result[0] as ASM.Chunk.Function
         assertEquals("main", chunk.name)
-        assertEquals(1, chunk.instructions.size)
-        assertEquals(ASM.Jump, chunk.instructions[0].instruction)
+        assertEquals(3, chunk.instructions.size)
+        assertEquals(ASM.Load.Constant(0), chunk.instructions[0].instruction)
+        assertEquals(ASM.Store(1), chunk.instructions[1].instruction)
+        assertEquals(ASM.Jump, chunk.instructions[2].instruction)
     }
 
     @Test
@@ -44,17 +46,34 @@ class MangoCompilerTests {
 
         val pretty = result.toPrettyString()
 
-        assertEquals(6, linked.size)
+        assertEquals(8, linked.size)
         assertEquals(ASM.Load.Constant(0), linked[0])
         assertEquals(ASM.Load.Constant(4), linked[1])
         assertEquals(ASM.Load.Constant(5), linked[2])
         assertEquals(ASM.Jump, linked[3])
         assertEquals(ASM.Exit, linked[4])
-        assertEquals(ASM.Jump, linked[5])
+        assertEquals(ASM.Load.Constant(0), linked[5])
+        assertEquals(ASM.Store(1), linked[6])
+        assertEquals(ASM.Jump, linked[7])
 
         val vm = VirtualMachine(linked)
         vm.run()
-        assertEquals(6, vm.ip)
+        assertEquals(8, vm.ip)
         assertEquals(0, vm.stack.first())
+        assertEquals(1, vm.stack.size)
+    }
+
+    @Test
+    fun simpleReturn() {
+        val (_, linked) = create("""
+            fn main() {
+                return 42
+            }
+        """.trimIndent())
+
+        val vm = VirtualMachine(linked)
+        vm.run()
+        assertEquals(42, vm.stack.first())
+        assertEquals(1, vm.stack.size)
     }
 }

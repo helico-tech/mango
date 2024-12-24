@@ -28,7 +28,7 @@ class VirtualMachine(
         ip++
         when (instruction) {
             is ASM.Load.Constant -> stack.addFirst(instruction.value)
-            is ASM.Load.Relative -> stack[instruction.offset]
+            is ASM.Load.Relative -> stack.addFirst(stack[instruction.offset])
             is ASM.Load.Label -> error("Can not load from label, need to be linked")
             is ASM.Store -> {
                 val value = pop()

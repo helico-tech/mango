@@ -109,8 +109,23 @@ abstract class AbstractCompiler(
         emit(ASM = ASM.Jump, comment = "Call [${call.identifier.name}] jump")
     }
 
+    protected fun block(block: AST.Block) {
+        block.statements.forEach(::statement)
+    }
+
+    protected open fun statement(statement: AST.Statement) {
+        when (statement) {
+
+            else -> throw IllegalArgumentException("Unknown statement: $statement")
+        }
+    }
+
     protected fun expression(expression: AST.Expression) {
-        TODO()
+        when (expression) {
+            is AST.Literal.Integer -> emit(ASM.Load.Constant(expression.value))
+            is AST.Identifier -> emit(ASM.Load.Label(expression.name))
+            else -> throw IllegalArgumentException("Unknown expression: $expression")
+        }
     }
 }
 
@@ -133,7 +148,27 @@ class FunctionCompiler(
     private val stackFrameDescriptor = StackFrameDescriptor(function)
 
     override fun compile() : ASM.Chunk.Function {
+        function.body.statements.forEach(::statement)
+        return ASM.Chunk.Function(function, annotated)
+    }
 
+    override fun statement(statement: AST.Statement) {
+        if (statement is AST.Control.Return) {
+            // push return value on the stack
+            expression(statement.expression)
+
+            // load return value into the return register
+            val offset = stackFrameDescriptor.offset(StackFrameDescriptor.Data.ReturnValue)
+            emit(ASM.Store(offset), comment = "Return value")
+
+            returnFromFunction()
+            return
+        } else {
+            super.statement(statement)
+        }
+    }
+
+    private fun returnFromFunction() {
         // unwind the stack
         if (stackFrameDescriptor.localsSize > 0) {
             emit(ASM.Pop(stackFrameDescriptor.localsSize), comment = "Unwind stack")
@@ -141,17 +176,5 @@ class FunctionCompiler(
 
         // jump to return address
         emit(ASM.Jump, comment = "Return")
-
-        return ASM.Chunk.Function(function, annotated)
-    }
-
-    private fun block(block: AST.Block) {
-        block.statements.forEach(::statement)
-    }
-
-    private fun statement(statement: AST.Statement) {
-        when (statement) {
-            else -> throw IllegalArgumentException("Unknown statement: $statement")
-        }
     }
 }

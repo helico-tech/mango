@@ -109,7 +109,15 @@ object Grammar : Grammar<AST.Program>() {
                     skip(zeroOrMore(Tokens.whitespace)) and
                     parser { block }
             )
-        .map { (identifier, parameters, block) -> AST.Declaration.Function(identifier, parameters ?: emptyList(), block) }
+        .map { (identifier, parameters, block) ->
+            AST.Declaration.Function(identifier, parameters ?: emptyList(), block).let { f ->
+                if (f.body.statements.lastOrNull() !is AST.Control.Return) {
+                    f.copy(
+                        body = AST.Block(f.body.statements + AST.Control.Return(AST.Literal.Integer(0)))
+                    )
+                } else f
+            }
+        }
 
     val statement : Parser<AST.Statement> by (
         assignment or variableDeclaration or expression or whenStatement or whileStatement or returnStatement or functionDeclaration

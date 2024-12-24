@@ -44,7 +44,8 @@ class MangoParserTests {
         assertIs<AST.Declaration.Function>(statement)
         assertEquals("main", statement.identifier.name)
         assertEquals(0, statement.arguments.size)
-        assertEquals(0, statement.body.size)
+        assertEquals(1, statement.body.size)
+        assertEquals(AST.Control.Return(AST.Literal.Integer(0)), statement.body[0])
     }
 
     @Test
@@ -55,7 +56,7 @@ class MangoParserTests {
             a = 3
         """.trimIndent())
 
-        assertEquals(3, function.body.size)
+        assertEquals(4, function.body.size)
 
         val a = function.body[0] as AST.Declaration.Variable
         assertEquals("a", a.identifier.name)
@@ -79,7 +80,7 @@ class MangoParserTests {
             let a = 1 + 2
         """.trimIndent())
 
-        assertEquals(1, function.body.size)
+        assertEquals(2, function.body.size)
 
         val a = function.body[0] as AST.Declaration.Variable
         assertEquals("a", a.identifier.name)
@@ -97,7 +98,7 @@ class MangoParserTests {
             let a = add(1, 2)
         """.trimIndent())
 
-        assertEquals(1, main.body.size)
+        assertEquals(2, main.body.size)
 
         val a = main.body[0] as AST.Declaration.Variable
         assertEquals("a", a.identifier.name)
@@ -122,7 +123,7 @@ class MangoParserTests {
             }
         """.trimIndent())
 
-        assertEquals(3, main.body.size)
+        assertEquals(4, main.body.size)
 
         assertIs<AST.Control.When>(main.body[0])
         assertIs<AST.Control.When>(main.body[1])
@@ -139,7 +140,7 @@ class MangoParserTests {
             }
         """.trimIndent())
 
-        assertEquals(3, main.body.size)
+        assertEquals(4, main.body.size)
 
         assertIs<AST.Control.While>(main.body[0])
         assertIs<AST.Control.While>(main.body[1])
@@ -164,7 +165,7 @@ class MangoParserTests {
             }
         """.trimIndent())
 
-        assertEquals(7, main.body.size)
+        assertEquals(8, main.body.size)
     }
 
     @Test
