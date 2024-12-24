@@ -2,8 +2,8 @@ package lang.mango.compiler
 
 import lang.mango.parser.AST
 
-sealed interface IR {
-    sealed interface Load : IR {
+sealed interface ASM {
+    sealed interface Load : ASM {
         data class Constant(val value: Int) : Load {
             override fun toString(): String {
                 return "Load.Constant($value)"
@@ -21,15 +21,15 @@ sealed interface IR {
         }
     }
 
-    data class Store(val offset: Int) : IR
+    data class Store(val offset: Int) : ASM
 
-    data class Pop(val count: Int) : IR
+    data class Pop(val count: Int) : ASM
 
-    data object Jump : IR
+    data object Jump : ASM
 
-    data object Exit : IR
+    data object Exit : ASM
 
-    sealed interface Op : IR {
+    sealed interface Op : ASM {
         data object Add : Op
         data object Sub : Op
         data object Mul : Op
@@ -37,7 +37,7 @@ sealed interface IR {
         data object Mod : Op
     }
 
-    data class Annotated(val ir: IR, val label: String? = null, val comment: String? = null)
+    data class Annotated(val instruction: ASM, val label: String? = null, val comment: String? = null)
 
     sealed interface Chunk {
         val instructions: List<Annotated>
@@ -51,17 +51,17 @@ sealed interface IR {
     }
 }
 
-fun IR.Annotated.toPrettyString(): String {
+fun ASM.Annotated.toPrettyString(): String {
     val label = label?.let { "$it:" } ?: ""
     val comment = comment?.let { " ; $it" } ?: ""
-    return "$label\t$ir\t$comment"
+    return "$label\t$instruction\t$comment"
 }
 
-fun IR.Chunk.toPrettyString(
+fun ASM.Chunk.toPrettyString(
     indexWidth: Int = instructions.size.toString().length,
     nameWidth: Int = instructions.maxOfOrNull { it.label?.length ?: 0 } ?: 0,
     commentWidth: Int = instructions.maxOfOrNull { it.comment?.length ?: 0 } ?: 0,
-    irWidth: Int = instructions.maxOfOrNull { it.ir.toString().length } ?: 0,
+    irWidth: Int = instructions.maxOfOrNull { it.instruction.toString().length } ?: 0,
     indexOffset: Int = 0
 ): String {
     return buildString {
@@ -69,18 +69,18 @@ fun IR.Chunk.toPrettyString(
         instructions.forEachIndexed { i, annotated ->
             val index = (i + indexOffset).toString().padStart(indexWidth)
             val label = (annotated.label ?: "").padEnd(nameWidth)
-            val ir = annotated.ir.toString().padEnd(irWidth)
+            val ir = annotated.instruction.toString().padEnd(irWidth)
             val comment = annotated.comment?.padEnd(commentWidth) ?: ""
             appendLine("\t$index\t$label\t$ir\t$comment")
         }
     }
 }
 
-fun Iterable<IR.Chunk>.toPrettyString(): String {
+fun Iterable<ASM.Chunk>.toPrettyString(): String {
     val indexWidth = maxOfOrNull { it.instructions.size.toString().length } ?: 0
     val nameWidth = maxOfOrNull { it.instructions.maxOfOrNull { it.label?.length ?: 0 } ?: 0 } ?: 0
     val commentWidth = maxOfOrNull { it.instructions.maxOfOrNull { it.comment?.length ?: 0 } ?: 0 } ?: 0
-    val irWidth = maxOfOrNull { it.instructions.maxOfOrNull { it.ir.toString().length } ?: 0 } ?: 0
+    val irWidth = maxOfOrNull { it.instructions.maxOfOrNull { it.instruction.toString().length } ?: 0 } ?: 0
 
     return buildString {
         var indexOffset = 0
