@@ -2,7 +2,7 @@ package lang.mango.compiler
 
 import lang.mango.parser.AST
 
-class MangoCompiler {
+object MangoCompiler {
 
     fun compile(program: AST.Program): List<Chunk> {
         return program.functions.map {
@@ -56,13 +56,27 @@ class FunctionCompiler(val function: AST.Declaration.Function) {
 
     fun control(control: AST.Control): List<Instruction> {
         return when (control) {
-            is AST.Control.Return -> expression(control.expression) + Return
+            is AST.Control.Return -> returnStatement(control)
             else -> throw UnsupportedOperationException("Unknown control: $control")
         }
     }
 
     fun block(block: AST.Block): List<Instruction> {
         return block.statements.flatMap { statement(it) }
+    }
+
+    private fun returnStatement(control: AST.Control.Return): List<Instruction> {
+        // place result on stack
+        val expression = expression(control.expression)
+
+        // place result in return slot
+        val offset = stackFrame.offset(StackFrame.Data.ReturnValue)
+        val store = Store("__return__", offset)
+
+        // remove stack frame contents and jump to return address
+        val pop = Pop(stackFrame.totalSize - stackFrame.returnSize)
+
+        return expression + store + pop + Jump
     }
 
     private fun storeLocal(name: String): Store {

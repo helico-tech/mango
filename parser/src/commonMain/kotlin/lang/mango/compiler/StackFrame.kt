@@ -14,7 +14,9 @@ class StackFrame(val function: AST.Declaration.Function) {
 
     private val stack = ArrayDeque<Data>()
 
-    val size: Int get() = stack.size
+    val totalSize: Int get() = stack.size
+
+    val returnSize = 2
 
     init {
         stack.addFirst(Data.ReturnValue)

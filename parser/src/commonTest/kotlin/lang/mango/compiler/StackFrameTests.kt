@@ -17,7 +17,7 @@ class StackFrameTests {
 
         val descriptor = StackFrame(function)
 
-        assertEquals(2, descriptor.size)
+        assertEquals(2, descriptor.totalSize)
     }
 
     @Test
@@ -26,7 +26,7 @@ class StackFrameTests {
 
         val descriptor = StackFrame(function)
 
-        assertEquals(4, descriptor.size)
+        assertEquals(4, descriptor.totalSize)
 
         assertEquals(3, descriptor.offset(StackFrame.Data.ReturnValue))
         assertEquals(2, descriptor.offset(StackFrame.Data.ReturnAddress))
@@ -45,7 +45,7 @@ class StackFrameTests {
 
         val descriptor = StackFrame(function)
 
-        assertEquals(4, descriptor.size)
+        assertEquals(4, descriptor.totalSize)
 
         assertEquals(3, descriptor.offset(StackFrame.Data.ReturnValue))
         assertEquals(2, descriptor.offset(StackFrame.Data.ReturnAddress))

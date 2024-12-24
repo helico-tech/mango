@@ -17,8 +17,6 @@ class MangoCompilerTests {
         return program.functions[0]
     }
 
-    val compiler = MangoCompiler()
-
     @Test()
     fun emptyFunction() {
         val function = AST.Declaration.Function(AST.Identifier("main"), emptyList(), AST.Block(emptyList()))
@@ -58,12 +56,12 @@ class MangoCompilerTests {
             }
         """.trimIndent()
 
-        val chunks = compiler.compile(MangoParser.parse(input))
+        val chunks = MangoCompiler.compile(MangoParser.parse(input))
 
         assertEquals(1, chunks.size)
 
         val chunk = chunks[0]
         assertEquals("main", chunk.name)
-        assertEquals(10, chunk.instructions.size)
+        assertEquals(12, chunk.instructions.size)
     }
 }

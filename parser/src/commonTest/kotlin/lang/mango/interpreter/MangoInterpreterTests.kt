@@ -44,11 +44,11 @@ class MangoInterpreterTests {
             }
             
             fn main() {
-                return fib(10)
+                return fib(20)
             }
         """.trimIndent())
 
         val result = interpreter.interpret(program)
-        assertEquals(55, result)
+        assertEquals(6765, result)
     }
 }

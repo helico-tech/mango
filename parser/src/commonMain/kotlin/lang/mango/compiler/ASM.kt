@@ -18,5 +18,5 @@ data class Pop(val count: Int): Instruction
 data class Arithmetic(val operator: String): Instruction
 
 // control
-data object Return: Instruction
+data object Jump : Instruction
 

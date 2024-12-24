@@ -10,7 +10,7 @@ class RuntimeEnvironment {
 
     private val functions = mutableMapOf<String, AST.Declaration.Function>()
 
-    private val stack = mutableListOf<StackFrame>()
+    private val stack = ArrayDeque<StackFrame>()
 
     fun registerFunction(function: AST.Declaration.Function) {
         functions[function.identifier.name] = function
@@ -21,18 +21,19 @@ class RuntimeEnvironment {
     }
 
     fun pushFrame() {
-        stack.add(StackFrame())
+        //stack.add(StackFrame())
+        stack.addFirst(StackFrame())
     }
 
     fun setVariable(name: String, value: Int) {
-        stack.last().variables[name] = value
+        stack.first().variables[name] = value
     }
 
     fun getVariable(name: String): Int {
-        return stack.last().variables[name] ?: throw RuntimeException("Variable $name not found")
+        return stack.first().variables[name] ?: throw RuntimeException("Variable $name not found")
     }
 
     fun popFrame() {
-        stack.removeAt(stack.size - 1)
+        stack.removeFirst()
     }
 }
