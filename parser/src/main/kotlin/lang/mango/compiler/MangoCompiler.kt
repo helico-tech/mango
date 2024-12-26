@@ -242,7 +242,7 @@ class FunctionCompiler(
     }
 
     private fun pushReturnLabel(): String {
-        val label = ".return.${returnLabelCounter++}"
+        val label = ".return.${function.identifier.name}.${returnLabelCounter++}"
         returnLabelStack.addFirst(label)
         return label
     }

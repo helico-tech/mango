@@ -1,6 +1,8 @@
-package lang.mango.compiler
+package lang.mango.vm
 
-class VirtualMachine(
+import lang.mango.compiler.ASM
+
+class ASMVirtualMachine(
     val instructions: List<ASM>,
 ) {
 
@@ -73,8 +75,6 @@ class VirtualMachine(
 
                 stack.addFirst(result)
             }
-
-            else -> error("Unknown instruction: $instruction")
         }
     }
 }

@@ -2,6 +2,7 @@ package lang.mango.compiler
 
 import lang.mango.parser.AST
 import lang.mango.parser.MangoParser
+import lang.mango.vm.ASMVirtualMachine
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -56,7 +57,7 @@ class MangoCompilerTests {
         assertEquals(ASM.Store(1), linked[6])
         assertEquals(ASM.Jump, linked[7])
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
         assertEquals(8, vm.ip)
         assertEquals(0, vm.stack.first())
@@ -71,7 +72,7 @@ class MangoCompilerTests {
             }
         """.trimIndent())
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
         assertEquals(42, vm.stack.first())
         assertEquals(1, vm.stack.size)
@@ -86,7 +87,7 @@ class MangoCompilerTests {
             }
         """.trimIndent())
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
         assertEquals(42, vm.stack.first())
         assertEquals(1, vm.stack.size)
@@ -104,7 +105,7 @@ class MangoCompilerTests {
 
         val pretty = result.toPrettyString()
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
 
         assertEquals(60, vm.stack.first())
@@ -125,7 +126,7 @@ class MangoCompilerTests {
 
         val pretty = result.toPrettyString()
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
 
         assertEquals(42, vm.stack.first())
@@ -148,7 +149,7 @@ class MangoCompilerTests {
 
         val pretty = result.toPrettyString()
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
 
         assertEquals(9, vm.stack.first())
@@ -167,7 +168,7 @@ class MangoCompilerTests {
 
         val pretty = result.toPrettyString()
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
 
         assertEquals(3, vm.stack.first())
@@ -186,7 +187,7 @@ class MangoCompilerTests {
 
         val pretty = result.toPrettyString()
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
 
         assertEquals(2, vm.stack.first())
@@ -205,7 +206,7 @@ class MangoCompilerTests {
 
         val pretty = result.toPrettyString()
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
 
         assertEquals(3, vm.stack.first())
@@ -226,7 +227,7 @@ class MangoCompilerTests {
 
         val pretty = result.toPrettyString()
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
 
         assertEquals(0, vm.stack.first())
@@ -249,7 +250,7 @@ class MangoCompilerTests {
 
         val pretty = result.toPrettyString()
 
-        val vm = VirtualMachine(linked)
+        val vm = ASMVirtualMachine(linked)
         vm.run()
 
         assertEquals(832040, vm.stack.first())
