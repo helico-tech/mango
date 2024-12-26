@@ -1,21 +1,11 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.jvm)
 }
 
 kotlin {
-    jvm()
 
-    sourceSets {
-        commonMain {
-            dependencies {
-                implementation(libs.betterParse)
-            }
-        }
-
-        commonTest {
-            dependencies {
-                implementation(kotlin("test"))
-            }
-        }
+    dependencies {
+        implementation(libs.betterParse)
+        testImplementation(kotlin("test"))
     }
 }

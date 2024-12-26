@@ -3,7 +3,7 @@ kotlin = "2.1.0"
 betterParse = "0.4.4"
 
 [plugins]
-kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 
 [libraries]
 betterParse = { module = "com.github.h0tk3y.betterParse:better-parse", version.ref = "betterParse" }
