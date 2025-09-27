@@ -232,6 +232,38 @@ object MangoCompiler {
 
 The actual file implements expression lowering, call setup/teardown, and return conventions via labels and stack operations.
 
+### 4.1 Core of the AOT compiler: Bootstrap, Function compiler, and StackFrameDescriptor
+
+The AOT compiler in Mango is intentionally small and explicit. It is centered around three pieces that work together with a stack-based calling convention:
+
+- BootstrapCompiler: Emits the program entry. It synthesizes a call to main() and sets a synthetic return label that leads to an Exit instruction.
+  - It does not lower arbitrary expressions; it only builds the initial call-and-exit sequence.
+- FunctionCompiler: Lowers blocks, statements, and expressions inside a function to ASM, following a strict stack discipline.
+  - Return: evaluates the return expression, stores it to the return-value slot, then unwinds locals and jumps to the caller via the return address on the stack.
+  - Variable declarations: evaluates the initializer and stores it into the function-local slot computed by the descriptor.
+  - Control (When): evaluates the condition, pushes a return label, then emits JumpWhenZero; the VM consumes the label and the condition from the stack.
+- StackFrameDescriptor: Describes how a function’s stack frame is laid out and helps compute relative offsets for loads/stores during lowering.
+  - The descriptor models these logical slots: ReturnAddress, ReturnValue, Local(name) for parameters and local variables, and transient RuntimeValue entries used while evaluating expressions.
+
+Calling convention and frame layout
+
+- The VM is stack-based; all data and control flow operate via pushing and popping stack values.
+- When emitting a call from the caller (AbstractCompiler.functionCall):
+  1) Push an initial 0 for the callee’s ReturnValue slot.
+  2) Push the callee’s return address label (resolved to an absolute address by the linker).
+  3) Push each argument value. While arguments are being evaluated, an offset is passed into expression lowering so that any reads of caller locals (Load.Relative) account for the extra values already pushed on the stack.
+  4) Push zero-initialized slots for any additional block-scoped locals required by the callee (computed from StackFrameDescriptor.localsSize).
+  5) Push the callee function’s entry label, then Jump. The Jump pops the address and transfers control, leaving the whole new frame on top of the stack for the callee.
+- Inside the callee:
+  - Identifiers compile to Load.Relative(offset) where offset is provided by the StackFrameDescriptor for this function. The descriptor is constructed as: [ReturnValue, ReturnAddress, parameters, local variables], with RuntimeValue slots temporarily pushed/popped during expression evaluation.
+  - Binary operations evaluate right, then left, pushing transient RuntimeValue slots in between; the arithmetic/compare op pops both operands and pushes the result.
+- Returning from the callee:
+  1) The return expression is evaluated; the result is stored to the ReturnValue slot (Store(offsetOf(ReturnValue))).
+  2) Pop(localsSize) unwinds only the function’s locals (parameters + block locals), leaving ReturnAddress and ReturnValue at the top.
+  3) Jump then pops ReturnAddress and transfers control back to the caller. The caller now finds the callee’s ReturnValue at the top of the stack for further use.
+
+This explicit, minimal convention makes it easy to link and run on any compliant stack VM.
+
 
 ## 5) Linking and encoding
 
